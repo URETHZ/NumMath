@@ -1,0 +1,230 @@
+package org.build;
+
+/*
+Вопросы для подготовки к защите лабораторной работы №1.
+1. Этапы, особенности решения нелинейных уравнений численными методами.
+2. Метод половинного деления.
+3. Метод касательных.
+4. Метод секущих.
+5. Метод хорд.
+6. Метод простых итераций.
+7. Геометрическая интерпретация (для любого из перечисленных методов).
+8. Сходимость метода (для любого из перечисленных). Устойчивость методов.
+9. Определение достаточного количества итераций при заданной точности (для любого из перечисленных алгоритмов).
+10. Вывод формулы для корня (метод хорд, метод секущих, метод касательных).
+11. Ограничения и рекомендации по применению каждого из методов.
+ */
+public class Main {
+    private double eps=0.01, HalfDivisionMethodResult=-1, q=1;
+    private double MetodOfSimpleIterationResult=-1, TangentMethodResult=-1;
+    public void setEps(double e)
+    {
+        eps = e;
+    }
+    public double getEps()
+    {
+        return eps;
+    }
+    public void setHDMR(double X)
+    {
+        HalfDivisionMethodResult = X;
+    }
+    public double getHDMR(){
+        return HalfDivisionMethodResult;
+    }
+    public void setMOSI(double X)
+    {
+        MetodOfSimpleIterationResult = X;
+    }
+    public double getMOSI(){
+        return MetodOfSimpleIterationResult;
+    }
+    public double getTM(){
+        return TangentMethodResult;
+    }
+    public void setTM(double X){
+        this.TangentMethodResult=X;
+    }
+    public double getQ(){return q;}
+    public void setQ(double b){
+        this.q = b;
+    }
+    public static void main(String[] args) {
+        new MainFrame(new Main());
+    }
+    public void HalfDivisionMethod(double x1, double x2)
+    {
+        double x0,fx0;
+        int n=0;
+        try {
+            if (x1>x2){
+                double temp = x2;
+                x2 = x1;
+                x1 = temp;
+            }
+            if (f(x1)*f(x2)>0) throw new Exception("Границы области одного знака.");
+
+            do{
+                n++;
+                x0 = (x1+x2)/2;
+                fx0 = (double) Math.round(f(x0) * 1000) /1000;
+                if (fx0==0.000){
+                    x0 = (double) Math.round(x0 * 1000) /1000;
+                    setHDMR(x0);
+                    return;
+                }
+                else if (fx0*f(x1)>0){
+                    x1 = x0;
+                }
+                else x2 = x0;
+            }
+            while (Math.abs(x2-x1)>2*eps || n < Math.log(Math.abs(x2-x1))/Math.log(2)/eps - 1);// предел сходимости
+            x0 = (double) Math.round(x0 * 1000) /1000;
+            setHDMR(x0);
+        }
+        catch (Exception ex)
+        {
+            throw new RuntimeException("Ошибка в методе половинного деления:"+ ex.getMessage());
+        }
+    }
+    public void TangentMethod(double x1, double x2)
+    {
+        try {
+            double xn,xk =x1;
+            if (x1>x2){
+                double temp = x2;
+                x2 = x1;
+                x1 = temp;
+            }
+            if (f(x1)*f(x2)>0) throw new Exception("Границы области одного знака.");
+            Double[] ffx = new Double[11], fffx = new Double[11];
+            double a;
+            for (int i = 0; i <= 10; i++) {
+                a =x1+ i * (x2 - x1) / 10;
+                ffx[i] = ff(a);
+                fffx[i] = fff(a);
+                if(fffx[i]*f(a)>0){
+                    xk = a;
+                }
+            }
+            double Max = fffx[0], Min = ffx[0];
+            boolean allPositive = true, allNegativ = true;
+            for (Double y : ffx) {
+                if (Math.abs(y) < Math.abs(Min)) {
+                    Min = y;
+                }
+                if (y < 0) {
+                    allPositive = false;
+                }
+                if (y >= 0) {
+                    allNegativ = false;
+                }
+            }
+            if (!allPositive && !allNegativ) throw new Exception("Производная f(x) на участке меняет знак, ошибка.");
+            for (Double y : ffx) {
+                if (Math.abs(y) > Math.abs(Max)) {
+                    Max = y;
+                }
+            }
+            xn = xk - f(xk)/ff(xk);
+            while(Math.abs(xn-xk)> Math.sqrt(2*Min*eps/Max)){
+                xk=xn;
+                xn = xk - f(xk)/ff(xk);
+            }
+            xn = (double) Math.round(xn * 1000) /1000;
+            setTM(xn);
+        }
+        catch (Exception ex){
+            throw new RuntimeException("Ошибка в методе Ньютона");
+        }
+    }
+    void SecantMethod(double x1, double x2)
+    {
+
+    }
+    void ChordMethod(double x1, double x2)
+    {
+
+    }
+    void MethodOfSimpleIterations(double x1, double x2)
+    {
+        try {
+            double lambda;
+            if (f(x1) * f(x2) > 0) throw new Exception("Границы области одного знака.");
+            if (x1 > x2) {
+                double temp = x2;
+                x2 = x1;
+                x1 = temp;
+            }
+            //знак лямбда
+            Double[] fx = new Double[11];
+            for (int i = 0; i <= 10; i++) {
+                fx[i] = ff(x1 + i * (x2 - x1) / 10);
+            }
+            double Max = fx[0], Min = fx[0];
+            boolean allPositive = true, allNegativ = true;
+            for (Double y : fx) {
+                if (Math.abs(y) > Math.abs(Max)) {
+                    Max = y;
+                }
+                if (Math.abs(y) < Math.abs(Min)) {
+                    Min = y;
+                }
+                if (y < 0) {
+                    allPositive = false;
+                }
+                if (y >= 0) {
+                    allNegativ = false;
+                }
+            }
+            if (!allPositive && !allNegativ) throw new Exception("Производная f(x) на участке меняет знак, ошибка.");
+            if (allPositive) {
+                lambda = -1 / Math.abs(Max);
+            } else {
+                lambda = 1 / Math.abs(Max);
+            }
+            double q = 0.0;
+            for (int i = 0; i <= 10; i++) {
+                double x = x1 + i * (x2 - x1) / 10;
+                double fprime = ff(x); // производная f(x) в точке x
+                double phiprime = 1.0 + lambda * fprime;
+                double abs_phiprime = Math.abs(phiprime);
+                if (abs_phiprime > q) {
+                    q = abs_phiprime;
+                }
+            }
+            setQ(q);
+            if (q >= 1) {
+                // Можно выбросить предупреждение или попробовать подобрать другую lambda
+                throw new RuntimeException("Внимание: q = " + q + " >= 1. Сходимость не гарантирована.");
+            }
+            double x_prev = x1;  // предыдущее приближение
+            double x_curr = phi(x_prev, lambda);  // текущее приближение
+
+            while (Math.abs(x_curr - x_prev) > (1 - q) / q * eps) {
+                x_prev = x_curr;
+                x_curr = phi(x_prev, lambda);
+            }
+            x_curr = (double) Math.round(x_curr * 1000) /1000;
+            setMOSI(x_curr);
+        }
+        catch (Exception ex){
+            throw new RuntimeException("Ошибка в методе итераций");
+        }
+    }
+    static double f(double x)
+    {
+        return -Math.pow(x,4)+4*Math.pow(x,3)-5*Math.log(x)-10;
+    }
+    static double ff(double x)
+    {
+        return -4*Math.pow(x,3) + 12*Math.pow(x,2)-5/x;
+    }
+    static double fff(double x){
+        return -12*Math.pow(x,2) + 24*x + 5/Math.pow(x,2);
+    }
+    static double phi(double x, double lambda)
+    {
+        return x + lambda*f(x);
+    }
+}
