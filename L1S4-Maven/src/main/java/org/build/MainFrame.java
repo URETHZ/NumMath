@@ -14,7 +14,7 @@ public class MainFrame  extends JFrame implements PropertyChangeListener
 {
     private Main model;
     private JWindow window;
-    private JTextArea ta1 ,ta2;
+    private JTextArea ta1 ,ta2, ta3;
     private JLabel label;
     private JTextArea iterTextArea;
     private final Font font = new Font("Arial",Font.BOLD, 25);
@@ -101,17 +101,14 @@ public class MainFrame  extends JFrame implements PropertyChangeListener
         textbar.setFocusable(true);
         JLabel lb6 = createStyledLabel("x1:");
         JLabel lb7 = createStyledLabel("x2:");
+        JLabel lb8 = createStyledLabel("(option) x0:");
 
-        ta1 = new JTextArea("3");
-        ta2 = new JTextArea("4");
-        ta1.setFont(font);
-        ta2.setFont(font);
-        ta1.setBackground(Color.darkGray);
-        ta2.setBackground(Color.darkGray);
-        ta1.setForeground(Color.cyan);
-        ta2.setForeground(Color.cyan);
+        ta1 = createStyledTextArea("3");
+        ta2 = createStyledTextArea("4");
+        ta3 = createStyledTextArea("NaN");
         textbar.add(lb6);textbar.add(ta1);
         textbar.add(lb7);textbar.add(ta2);
+        textbar.add(lb8);textbar.add(ta3);
 
         labelpanel.add(textbar);
 
@@ -126,7 +123,7 @@ public class MainFrame  extends JFrame implements PropertyChangeListener
             try {
                 methodCall.run();
                 resultLabel.setText("Res: " + getMethodResult(methodName));
-            } catch (NumberFormatException ex) {
+            } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage());
             }
         });
@@ -141,8 +138,12 @@ public class MainFrame  extends JFrame implements PropertyChangeListener
             default: return 0;
         }
     }
-    private Double getX0(){
-
+    private Double getX0()
+    {
+        if(!TryParseDouble(ta3.getText())){
+            return Double.NaN;
+        }
+        return Double.parseDouble(ta3.getText());
     }
     private double getX1()
     {
@@ -187,6 +188,15 @@ public class MainFrame  extends JFrame implements PropertyChangeListener
         lb1.setBackground(Color.DARK_GRAY);
         lb1.setForeground(Color.CYAN);
         return lb1;
+    }
+    private JTextArea createStyledTextArea(String text) {
+        JTextArea ta = new JTextArea(1,2);
+        ta.setOpaque(true);
+        ta.setText(text);
+        ta.setFont(font);
+        ta.setBackground(Color.GRAY);
+        ta.setForeground(Color.CYAN);
+        return ta;
     }
     private void ChangeNumeral(String str, String name) {
         String input = JOptionPane.showInputDialog(

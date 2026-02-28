@@ -95,7 +95,7 @@ public class Main {
             if(!Double.isNaN(X0prior)){
                 x0 = X0prior;
             }
-            do {
+            while (Math.abs(x2 - x1) > 2 * eps || n < Math.log(Math.abs(x2 - x1)) / Math.log(2) / eps - 1){// предел сходимости
                 n++;
                 setAprox(x0); // записываем текущее приближение
                 fx0 = (double) Math.round(f(x0) * 1000) / 1000;
@@ -108,13 +108,14 @@ public class Main {
                 } else {
                     x2 = x0;
                 }
+                x0 = (x1+x2)/2;
 
                 // Проверка на превышение максимального количества итераций
                 if (n > getCount()) {
                     throw new RuntimeException("Превышено максимальное количество итераций (" + getCount() + ") в методе половинного деления");
                 }
             }
-            while (Math.abs(x2 - x1) > 2 * eps || n < Math.log(Math.abs(x2 - x1)) / Math.log(2) / eps - 1);// предел сходимости
+
             x0 = (double) Math.round(x0 * 1000) / 1000;
             setHDMR(x0);
         } catch (Exception ex) {
@@ -216,12 +217,13 @@ public class Main {
             // xn = xn; xk = x_(n-1) xkk = x_(n-2);
             xn = xk - (xk - xkk) * f(xk) / (f(xk) - f(xkk));
             setAprox(xn); // записываем первое приближение
-
+            if (Double.isNaN(xn) || xn== xk) { throw new RuntimeException("Возможно попдание в ассимптоту. (xn=x(n-1))");}
             int iteration = 1;
-            while (Math.abs(xn - xk) > eps) {
+            while (Math.abs(xn - xk) > eps || Math.abs(f(xn)) > eps) {
                 xkk = xk;
                 xk = xn;
                 xn = xk - (xk - xkk) * f(xk) / (f(xk) - f(xkk));
+                if (Double.isNaN(xn) || xn== xk) { throw new RuntimeException("Возможно попдание в ассимптоту. (xn=x(n-1))");}
                 setAprox(xn); // записываем текущее приближение
                 iteration++;
 
@@ -240,7 +242,7 @@ public class Main {
     void ChordMethod(double x1, double x2, Double X0prior) {
         clearApproximations();
         try {
-            double xn,xk, b , x0;
+            double xn, xk, b;
             if (x1 > x2) {
                 double temp = x2;
                 x2 = x1;
@@ -248,21 +250,23 @@ public class Main {
             }
             if (f(x1) * f(x2) > 0) throw new Exception("Границы области одного знака.");
             if (fff(x1) * f(x1) >= 0) {
-                x0 = x2;
+                xk = x2;
                 b = x1;
             } else if (fff(x2) * f(x2) >= 0) {
-                x0 = x1;
+                xk = x1;
                 b = x2;
             } else throw new RuntimeException("X0 не установлено");
-
-            setAprox(x0); // записываем начальное приближение
-            xk = x0;
+            if(!Double.isNaN(X0prior)){ xk = X0prior;}
+            if(xk==b) {throw new RuntimeException("x0 не должно быть равно b. Оно должно быть максимально далеко от него!");}
+            setAprox(xk); // записываем начальное приближение
             xn = xk - (b - xk) * f(xk) / (f(b) - f(xk));
+            if (Double.isNaN(xn) || xn== xk) { throw new RuntimeException("Возможно попдание в ассимптоту. (xn=x(n-1))");}
             setAprox(xn); // записываем первое приближение
             int iteration = 1;
             while (Math.abs(xn - xk) > eps) {
                 xk = xn;
                 xn = xk - (b - xk) * f(xk) / (f(b) - f(xk));
+                if (Double.isNaN(xn)|| xn== xk) { throw new RuntimeException("Попдание в ассимптоту.");}
                 setAprox(xn); // записываем текущее приближение
                 iteration++;
                 // Проверка на превышение максимального количества итераций
@@ -277,7 +281,7 @@ public class Main {
         }
     }
 
-    void MethodOfSimpleIterations(double x1, double x2) {
+    void MethodOfSimpleIterations(double x1, double x2, Double X0prior) {
         clearApproximations(); // очищаем список перед началом нового метода
         try {
             double lambda;
@@ -331,6 +335,7 @@ public class Main {
                 throw new RuntimeException("Внимание: q = " + q + " >= 1. Сходимость не гарантирована.");
             }
             double x_prev = x1;  // предыдущее приближение
+            if (!Double.isNaN(X0prior)){x_prev=X0prior;}
             double x_curr = phi(x_prev, lambda);  // текущее приближение
 
             setAprox(x_prev); // записываем начальное приближение
