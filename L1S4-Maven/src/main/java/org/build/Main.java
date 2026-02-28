@@ -1,5 +1,9 @@
 package org.build;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
+import java.util.*;
+
 /*
 Вопросы для подготовки к защите лабораторной работы №1.
 1. Этапы, особенности решения нелинейных уравнений численными методами.
@@ -15,95 +19,126 @@ package org.build;
 11. Ограничения и рекомендации по применению каждого из методов.
  */
 public class Main {
-    private double eps=0.01, HalfDivisionMethodResult=-1, q=1;
-    private double MetodOfSimpleIterationResult=-1, TangentMethodResult=-1;
-    public void setEps(double e)
-    {
-        eps = e;
+    private double eps = 0.01, HalfDivisionMethodResult = -1, q = 1;
+    private double MetodOfSimpleIterationResult = -1, TangentMethodResult = -1;
+    private double SecantMetodResult = -1, ChordMetodResult = -1;
+    private int Count = 50;
+    private List<Double> approximations = new ArrayList<>(); // список всех приближений
+
+    public int getCount() { return Count; }
+
+    public void setCount(int count) { this.Count = count; }
+
+    public void setEps(double e) { eps = e; }
+
+    public double getEps() { return eps; }
+
+    public void setHDMR(double X) { HalfDivisionMethodResult = X; }
+
+    public double getHDMR() { return HalfDivisionMethodResult; }
+
+    public void setMOSI(double X) { MetodOfSimpleIterationResult = X; }
+
+    public double getMOSI() { return MetodOfSimpleIterationResult; }
+
+    public double getTM() { return TangentMethodResult; }
+
+    public void setTM(double X) { this.TangentMethodResult = X; }
+
+    public double getQ() { return q; }
+
+    public void setQ(double X) { this.q = X; }
+
+    public void setSM(double X) { this.SecantMetodResult = X; }
+
+    public double getSM() { return SecantMetodResult; }
+
+    public void setCM(double X) { this.ChordMetodResult = X; }
+
+    public double getCM() { return ChordMetodResult; }
+
+    public List<Double> getApprox() { return approximations; }
+
+    public void setAprox(double X){
+
+        this.approximations.add(X);
+        // Уведомляем всех слушателей об изменении
+        support.firePropertyChange("approximations", "0", "1");
     }
-    public double getEps()
-    {
-        return eps;
+
+    public void clearApproximations() { approximations.clear(); }
+
+    private PropertyChangeSupport support = new PropertyChangeSupport(this);
+
+    public void addListener(PropertyChangeListener listener) {
+        support.addPropertyChangeListener(listener);
     }
-    public void setHDMR(double X)
-    {
-        HalfDivisionMethodResult = X;
-    }
-    public double getHDMR(){
-        return HalfDivisionMethodResult;
-    }
-    public void setMOSI(double X)
-    {
-        MetodOfSimpleIterationResult = X;
-    }
-    public double getMOSI(){
-        return MetodOfSimpleIterationResult;
-    }
-    public double getTM(){
-        return TangentMethodResult;
-    }
-    public void setTM(double X){
-        this.TangentMethodResult=X;
-    }
-    public double getQ(){return q;}
-    public void setQ(double b){
-        this.q = b;
-    }
+
     public static void main(String[] args) {
         new MainFrame(new Main());
     }
-    public void HalfDivisionMethod(double x1, double x2)
-    {
-        double x0,fx0;
-        int n=0;
+
+    public void HalfDivisionMethod(double x1, double x2, Double X0prior) {
+        clearApproximations(); // очищаем список перед началом нового метода
+        double x0, fx0;
+        int n = 0;
         try {
-            if (x1>x2){
+            if (x1 > x2) {
                 double temp = x2;
                 x2 = x1;
                 x1 = temp;
             }
-            if (f(x1)*f(x2)>0) throw new Exception("Границы области одного знака.");
+            if (f(x1) * f(x2) > 0) throw new Exception("Границы области одного знака.");
 
-            do{
+            x0 = (x1 + x2) / 2;
+
+            if(!Double.isNaN(X0prior)){
+                x0 = X0prior;
+            }
+            do {
                 n++;
-                x0 = (x1+x2)/2;
-                fx0 = (double) Math.round(f(x0) * 1000) /1000;
-                if (fx0==0.000){
-                    x0 = (double) Math.round(x0 * 1000) /1000;
+                setAprox(x0); // записываем текущее приближение
+                fx0 = (double) Math.round(f(x0) * 1000) / 1000;
+                if (fx0 == 0.000) {
+                    x0 = (double) Math.round(x0 * 1000) / 1000;
                     setHDMR(x0);
                     return;
-                }
-                else if (fx0*f(x1)>0){
+                } else if (fx0 * f(x1) > 0) {
                     x1 = x0;
+                } else {
+                    x2 = x0;
                 }
-                else x2 = x0;
+
+                // Проверка на превышение максимального количества итераций
+                if (n > getCount()) {
+                    throw new RuntimeException("Превышено максимальное количество итераций (" + getCount() + ") в методе половинного деления");
+                }
             }
-            while (Math.abs(x2-x1)>2*eps || n < Math.log(Math.abs(x2-x1))/Math.log(2)/eps - 1);// предел сходимости
-            x0 = (double) Math.round(x0 * 1000) /1000;
+            while (Math.abs(x2 - x1) > 2 * eps || n < Math.log(Math.abs(x2 - x1)) / Math.log(2) / eps - 1);// предел сходимости
+            x0 = (double) Math.round(x0 * 1000) / 1000;
             setHDMR(x0);
-        }
-        catch (Exception ex)
-        {
-            throw new RuntimeException("Ошибка в методе половинного деления:"+ ex.getMessage());
+        } catch (Exception ex) {
+            throw new RuntimeException("Ошибка в методе половинного деления: " + ex.getMessage());
         }
     }
-    public void TangentMethod(double x1, double x2)
-    {
+
+    public void TangentMethod(double x1, double x2, Double X0prior) {
+        clearApproximations(); // очищаем список перед началом нового метода
         try {
-            double xn,xk =x1;
-            if (x1>x2){
+            double xn, xk = x1;
+            if (x1 > x2) {
                 double temp = x2;
                 x2 = x1;
                 x1 = temp;
             }
-            if (f(x1)*f(x2)>0) throw new Exception("Границы области одного знака.");
+            if (f(x1) * f(x2) > 0) throw new Exception("Границы области одного знака.");
             Double[] ffx = new Double[11], fffx = new Double[11];
             double a;
             for (int i = 0; i <= 10; i++) {
-                a =x1+ i * (x2 - x1) / 10;
+                a = x1 + i * (x2 - x1) / 10;
                 ffx[i] = ff(a);
                 fffx[i] = fff(a);
-                if(fffx[i]*f(a)>0){
+                if (fffx[i] * f(a) > 0) {
                     xk = a;
                 }
             }
@@ -126,28 +161,124 @@ public class Main {
                     Max = y;
                 }
             }
-            xn = xk - f(xk)/ff(xk);
-            while(Math.abs(xn-xk)> Math.sqrt(2*Min*eps/Max)){
-                xk=xn;
-                xn = xk - f(xk)/ff(xk);
+            if((allPositive || allNegativ) && Double.isNaN(X0prior))
+            {
+                for(double x = x1; x<=x2; x = x + (x2-x1)/10){
+                    if (fff(x) * f(x) >= 0) {
+                        xk=x;
+                    }
+                }
             }
-            xn = (double) Math.round(xn * 1000) /1000;
+            if(!Double.isNaN(X0prior)){
+                xk = X0prior;
+            }
+
+            setAprox(xk); // записываем начальное приближение
+
+            xn = xk - f(xk) / ff(xk);
+            setAprox(xn); // записываем первое приближение
+
+            int iteration = 1;
+            while (Math.abs(xn - xk) > Math.sqrt(2 * Min * eps / Max)) {
+                xk = xn;
+                xn = xk - f(xk) / ff(xk);
+                setAprox(xn); // записываем текущее приближение
+                iteration++;
+
+                // Проверка на превышение максимального количества итераций
+                if (iteration > getCount()) {
+                    throw new RuntimeException("Превышено максимальное количество итераций (" + getCount() + ") в методе Ньютона");
+                }
+            }
+            xn = (double) Math.round(xn * 1000) / 1000;
             setTM(xn);
+        } catch (Exception ex) {
+            throw new RuntimeException("Ошибка в методе Ньютона: " + ex.getMessage());
         }
-        catch (Exception ex){
-            throw new RuntimeException("Ошибка в методе Ньютона");
+    }
+
+    void SecantMethod(double x1, double x2, Double X0prior) {
+        clearApproximations(); // очищаем список перед началом нового метода
+        try {
+            double xn, xkk = Double.isNaN(X0prior)?x1:X0prior, xk;
+            if (xkk>=x1 && xkk+eps<=x2) {  xk = xkk + eps; }
+            else {  xk = xkk - eps;}
+            if (x1 > x2) {
+                double temp = x2;
+                x2 = x1;
+                x1 = temp;
+            }
+            if (f(x1) * f(x2) > 0) throw new Exception("Границы области одного знака.");
+
+            setAprox(xkk); // записываем x_(n-2)
+            setAprox(xk);   // записываем x_(n-1)
+
+            // xn = xn; xk = x_(n-1) xkk = x_(n-2);
+            xn = xk - (xk - xkk) * f(xk) / (f(xk) - f(xkk));
+            setAprox(xn); // записываем первое приближение
+
+            int iteration = 1;
+            while (Math.abs(xn - xk) > eps) {
+                xkk = xk;
+                xk = xn;
+                xn = xk - (xk - xkk) * f(xk) / (f(xk) - f(xkk));
+                setAprox(xn); // записываем текущее приближение
+                iteration++;
+
+                // Проверка на превышение максимального количества итераций
+                if (iteration > getCount()) {
+                    throw new RuntimeException("Превышено максимальное количество итераций (" + getCount() + ") в методе секущих");
+                }
+            }
+            xn = (double) Math.round(xn * 1000) / 1000;
+            setSM(xn);
+        } catch (Exception ex) {
+            throw new RuntimeException("Ошибка в методе секущих: " + ex.getMessage());
         }
     }
-    void SecantMethod(double x1, double x2)
-    {
 
-    }
-    void ChordMethod(double x1, double x2)
-    {
+    void ChordMethod(double x1, double x2, Double X0prior) {
+        clearApproximations();
+        try {
+            double xn,xk, b , x0;
+            if (x1 > x2) {
+                double temp = x2;
+                x2 = x1;
+                x1 = temp;
+            }
+            if (f(x1) * f(x2) > 0) throw new Exception("Границы области одного знака.");
+            if (fff(x1) * f(x1) >= 0) {
+                x0 = x2;
+                b = x1;
+            } else if (fff(x2) * f(x2) >= 0) {
+                x0 = x1;
+                b = x2;
+            } else throw new RuntimeException("X0 не установлено");
 
+            setAprox(x0); // записываем начальное приближение
+            xk = x0;
+            xn = xk - (b - xk) * f(xk) / (f(b) - f(xk));
+            setAprox(xn); // записываем первое приближение
+            int iteration = 1;
+            while (Math.abs(xn - xk) > eps) {
+                xk = xn;
+                xn = xk - (b - xk) * f(xk) / (f(b) - f(xk));
+                setAprox(xn); // записываем текущее приближение
+                iteration++;
+                // Проверка на превышение максимального количества итераций
+                if (iteration > getCount()) {
+                    throw new RuntimeException("Превышено максимальное количество итераций (" + getCount() + ") в методе хорд");
+                }
+            }
+            xn = (double) Math.round(xn * 1000) / 1000;
+            setCM(xn);
+        } catch (Exception ex) {
+            throw new RuntimeException("Ошибка в методе хорд: " + ex.getMessage());
+        }
     }
-    void MethodOfSimpleIterations(double x1, double x2)
-    {
+
+    void MethodOfSimpleIterations(double x1, double x2) {
+        clearApproximations(); // очищаем список перед началом нового метода
         try {
             double lambda;
             if (f(x1) * f(x2) > 0) throw new Exception("Границы области одного знака.");
@@ -177,7 +308,8 @@ public class Main {
                     allNegativ = false;
                 }
             }
-            if (!allPositive && !allNegativ) throw new Exception("Производная f(x) на участке меняет знак, ошибка.");
+            if (!allPositive && !allNegativ)
+                throw new Exception("Производная f(x) на участке меняет знак, ошибка.");
             if (allPositive) {
                 lambda = -1 / Math.abs(Max);
             } else {
@@ -201,30 +333,42 @@ public class Main {
             double x_prev = x1;  // предыдущее приближение
             double x_curr = phi(x_prev, lambda);  // текущее приближение
 
+            setAprox(x_prev); // записываем начальное приближение
+            setAprox(x_curr); // записываем первое приближение
+
+            int iteration = 1;
             while (Math.abs(x_curr - x_prev) > (1 - q) / q * eps) {
                 x_prev = x_curr;
                 x_curr = phi(x_prev, lambda);
+                setAprox(x_curr); // записываем текущее приближение
+                iteration++;
+
+                // Проверка на превышение максимального количества итераций
+                if (iteration > getCount()) {
+                    throw new RuntimeException("Превышено максимальное количество итераций (" + getCount() + ") в методе простых итераций");
+                }
             }
-            x_curr = (double) Math.round(x_curr * 1000) /1000;
+            x_curr = (double) Math.round(x_curr * 1000) / 1000;
             setMOSI(x_curr);
+        } catch (Exception ex) {
+            throw new RuntimeException("Ошибка в методе итераций: " + ex.getMessage());
         }
-        catch (Exception ex){
-            throw new RuntimeException("Ошибка в методе итераций");
-        }
     }
-    static double f(double x)
-    {
-        return -Math.pow(x,4)+4*Math.pow(x,3)-5*Math.log(x)-10;
+
+    //Функция, ее первая, вторая производная и phi(x) для метода простых итераций.
+    static double f(double x) {
+        return -Math.pow(x, 4) + 4 * Math.pow(x, 3) - 5 * Math.log(x) - 10;
     }
-    static double ff(double x)
-    {
-        return -4*Math.pow(x,3) + 12*Math.pow(x,2)-5/x;
+
+    static double ff(double x) {
+        return -4 * Math.pow(x, 3) + 12 * Math.pow(x, 2) - 5 / x;
     }
-    static double fff(double x){
-        return -12*Math.pow(x,2) + 24*x + 5/Math.pow(x,2);
+
+    static double fff(double x) {
+        return -12 * Math.pow(x, 2) + 24 * x + 5 / Math.pow(x, 2);
     }
-    static double phi(double x, double lambda)
-    {
-        return x + lambda*f(x);
+
+    static double phi(double x, double lambda) {
+        return x + lambda * f(x);
     }
 }

@@ -2,15 +2,21 @@ package org.build;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 
 //JOptionPane.showMessageDialog(this, "Введите число!");
-public class MainFrame extends JFrame
+public class MainFrame  extends JFrame implements PropertyChangeListener
 {
     private Main model;
+    private JWindow window;
     private JTextArea ta1 ,ta2;
+    private JLabel label;
+    private JTextArea iterTextArea;
     private final Font font = new Font("Arial",Font.BOLD, 25);
     public MainFrame(Main p) {
         this.model=p;
@@ -32,13 +38,32 @@ public class MainFrame extends JFrame
         JMenuItem Show = new JMenuItem("Построить график.");
         Show.addActionListener(e-> new Grafic(this.getLocation().x, this.getLocation().y));
         graf.add(Show);
-        JMenu eps = new JMenu("Epsilon");
-        menubar.add(eps);
-        JMenuItem editEps = new JMenuItem("Задать постоянную");
-        eps.add(editEps);
+        JMenu NumMenu = new JMenu("Переменные");
+        menubar.add(NumMenu);
+        JMenu СheckMenu = new JMenu("Отладка");
+        menubar.add(СheckMenu);
+        JMenuItem showIteration = new JMenuItem("Показывать историю итераций");
+        JMenuItem closeIteration = new JMenuItem("Закрыть окно итераций");
+        СheckMenu.add(showIteration);
+        СheckMenu.add(closeIteration);
+        closeIteration.addActionListener(e->{
+            CloseIter();
+        });
+        showIteration.addActionListener(e->{
+            ShowIter();
+        });
+
+        JMenuItem editEps = new JMenuItem("Задать постоянную epsilon");
+        JMenuItem editCount = new JMenuItem("Максимальное количество итераций");
+        NumMenu.add(editEps);
+        NumMenu.add(editCount);
         editEps.addActionListener(e->
         {
-            ChangeEps();
+            ChangeNumeral("Значение точности (eps):", "eps");
+        });
+        editCount.addActionListener(e->
+        {
+            ChangeNumeral("Максимальное количесвто итераций(Count):", "count");
         });
 
 
@@ -63,11 +88,11 @@ public class MainFrame extends JFrame
             gridpanel.add(btns.get(x));
             gridpanel.add(lbs.get(y));
         }
-        addMethodListener(btns.get(0),"half" ,lbs.get(0),() -> model.HalfDivisionMethod(getX1(),getX2()));
-        addMethodListener(btns.get(1),"secant" ,lbs.get(1),() -> model.SecantMethod(getX1(),getX2()));
-        addMethodListener(btns.get(2),"newton" ,lbs.get(2),() -> model.TangentMethod(getX1(),getX2()));
-        addMethodListener(btns.get(3),"chord" ,lbs.get(3),() -> model.ChordMethod(getX1(),getX2()));
-        addMethodListener(btns.get(4),"iteration" ,lbs.get(4),() -> model.MethodOfSimpleIterations(getX1(),getX2()));
+        addMethodListener(btns.get(0),"half" ,lbs.get(0),() -> model.HalfDivisionMethod(getX1(),getX2(), getX0()));
+        addMethodListener(btns.get(1),"secant" ,lbs.get(1),() -> model.SecantMethod(getX1(),getX2(), getX0()));
+        addMethodListener(btns.get(2),"newton" ,lbs.get(2),() -> model.TangentMethod(getX1(),getX2(), getX0()));
+        addMethodListener(btns.get(3),"chord" ,lbs.get(3),() -> model.ChordMethod(getX1(),getX2(), getX0()));
+        addMethodListener(btns.get(4),"iteration" ,lbs.get(4),() -> model.MethodOfSimpleIterations(getX1(),getX2(), getX0()));
 
         JPanel labelpanel = new JPanel(new BorderLayout());
 
@@ -109,12 +134,15 @@ public class MainFrame extends JFrame
     private double getMethodResult(String methodName) {
         switch (methodName) {
             case "half": return model.getHDMR();
-            case "secant": return model.getHDMR();
+            case "secant": return model.getSM();
             case "newton": return model.getTM();
-            case "chord": return model.getHDMR();
+            case "chord": return model.getCM();
             case "iteration": return model.getMOSI();
             default: return 0;
         }
+    }
+    private Double getX0(){
+
     }
     private double getX1()
     {
@@ -160,32 +188,139 @@ public class MainFrame extends JFrame
         lb1.setForeground(Color.CYAN);
         return lb1;
     }
-    private void ChangeEps() {
+    private void ChangeNumeral(String str, String name) {
         String input = JOptionPane.showInputDialog(
                 this,
-                "Значение точности (eps):",
-                model.getEps()
+                str,
+                Objects.equals(name, "eps") ?model.getEps():model.getCount()
         );
-
         if (input != null) {
-            try {
-                double eps = Double.parseDouble(input);
-                if (eps > 0) {
-                    model.setEps(eps);
-                    JOptionPane.showMessageDialog(this,
-                            "Точность установлена: " + eps);
-                } else {
-                    JOptionPane.showMessageDialog(this,
-                            "Значение должно быть положительным!",
-                            "Ошибка",
-                            JOptionPane.ERROR_MESSAGE);
+            switch (name){
+                case "eps":
+                {
+                    try {
+                        double eps = Double.parseDouble(input);
+                        if (eps > 0) {
+                            model.setEps(eps);
+                            JOptionPane.showMessageDialog(this,
+                                    "установлено: "+name+" = " + eps);
+                        } else {
+                            JOptionPane.showMessageDialog(this,
+                                    "Значение должно быть положительным!",
+                                    "Ошибка",
+                                    JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (NumberFormatException ex) {
+                        JOptionPane.showMessageDialog(this,
+                                "Некорректный формат числа!",
+                                "Ошибка",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+                    break;
                 }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this,
-                        "Некорректный формат числа!",
-                        "Ошибка",
-                        JOptionPane.ERROR_MESSAGE);
+                case"count":
+                {
+                    try {
+                        int eps = Integer.parseInt(input);
+                        if (eps > 0) {
+                            model.setCount(eps);
+                            JOptionPane.showMessageDialog(this,
+                                    "установлено: "+name+" = " + eps);
+                        } else {
+                            JOptionPane.showMessageDialog(this,
+                                    "Значение должно быть положительным!",
+                                    "Ошибка",
+                                    JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (NumberFormatException ex) {
+                        JOptionPane.showMessageDialog(this,
+                                "Некорректный формат числа!",
+                                "Ошибка",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+                }
             }
+
         }
+    }
+    private void ShowIter()
+    {
+        this.window = new JWindow();
+        window.setLocation(this.getLocation().x - 150, this.getLocation().y + 50);
+        window.setSize(150, 300);
+        model.addListener(this);
+
+        JPanel panel = new JPanel(new BorderLayout());
+
+        // Заголовок
+        label = new JLabel("Стек итераций:");
+        label.setBackground(Color.GRAY);
+        label.setForeground(Color.CYAN);
+        label.setHorizontalAlignment(JLabel.CENTER);
+        label.setOpaque(true); // чтобы фон отображался
+        panel.add(label, BorderLayout.NORTH);
+
+        // Создаём текстовую область для отображения итераций
+        JTextArea textArea = new JTextArea();
+        textArea.setEditable(false);
+        textArea.setBackground(Color.BLACK);
+        textArea.setForeground(Color.GREEN);
+        textArea.setFont(new Font("Monospaced", Font.PLAIN, 11));
+
+        // Сохраняем ссылку на textArea для обновления (добавьте поле в класс)
+        this.iterTextArea = textArea;
+
+        // Помещаем текстовую область в JScrollPane для прокрутки
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
+
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        window.add(panel);
+        window.setVisible(true);
+
+        // Первоначальное обновление
+        updateLabel();
+    }
+    private void CloseIter(){
+        if(window!=null){ this.window.dispose();}
+    }
+
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+
+        if (window!=null && Objects.equals(evt.getPropertyName(), "approximations")){
+            updateLabel();
+        }
+    }
+    public void updateLabel(){
+        if (iterTextArea == null) return; // проверка на случай, если окно закрыто
+
+        List<Double> list = model.getApprox();
+        if (list == null || list.isEmpty()) {
+            iterTextArea.setText("Список пуст");
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder();
+
+        // Добавляем заголовок для красоты
+        sb.append("─── Итерации ───\n");
+        sb.append(" №     Значение\n");
+        sb.append("────────────────\n");
+
+        for (int i = 0; i < list.size(); i++) {
+            sb.append(String.format("%2d → %.6f\n", i, list.get(i)));
+        }
+
+        sb.append("────────────────\n");
+        sb.append(String.format("Всего: %d итераций", list.size()));
+
+        iterTextArea.setText(sb.toString());
+
+        // Автопрокрутка вниз (к последним значениям)
+        iterTextArea.setCaretPosition(iterTextArea.getDocument().getLength());
     }
 }
